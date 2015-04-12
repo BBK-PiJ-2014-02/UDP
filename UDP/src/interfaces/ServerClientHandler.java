@@ -1,29 +1,27 @@
 package interfaces;
 
-import java.util.UUID;
-
-import constants.Role;
 
 /**
- * Server-Client Handler is initiated by the Server and
- * will handle Clients on their role.
+ * Server-Client Handler initiated by the Server to handle with a Client.
+ * Will be sending the role via TCP as well as setting up the UDP Socket
+ * to which the Client should communicate with ServerClientHandler.
+ * Relays UDP packets between the Server and the Client.
  * 
  * @author Vasco
  *
  */
 public interface ServerClientHandler extends Runnable {
 	/**
-	 * The unique client identifier.
+	 * The new Client's role to be set via TCP, requested by the server.
 	 * 
-	 * @return
+	 * @param role
 	 */
-    UUID getUniqueID();
-    
-    /**
-     * The Client's current role.
-     * Client's can be receivers or senders.
-     * 
-     * @return
-     */
-    Role getRole();
+	public void setRole(String role);
+	
+	/**
+	 * Current Client's role.
+	 * 
+	 * @return String role
+	 */
+	public String getRole();
 }
