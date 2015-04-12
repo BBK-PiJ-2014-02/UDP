@@ -1,7 +1,10 @@
 package tests;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import implementation.ServerClientHandlerImpl;
+import implementation.ServerImpl;
+import interfaces.Server;
 import interfaces.ServerClientHandler;
 
 import java.util.UUID;
@@ -24,6 +27,11 @@ public class TestServerClientHandler {
 	private ServerClientHandler serverClientHandler;
 	
 	/**
+	 * The Server object handler
+	 */
+	private Server server;
+	
+	/**
 	 * The unique ID.
 	 */
 	private UUID UNIQUE_ID = UUID.randomUUID();
@@ -32,13 +40,38 @@ public class TestServerClientHandler {
 	 * The Initialized role.
 	 */
 	private Role ROLE = Role.RECEIVER;
-	
+
 	/**
 	 * Initializing all required variables before each test.
 	 */
 	@Before
 	public void before() {
-		serverClientHandler = new ServerClientHandlerImpl(UNIQUE_ID, ROLE);
+		server = new ServerImpl();
+		serverClientHandler = new ServerClientHandlerImpl(server, UNIQUE_ID, ROLE);
+	}
+	
+	/**
+	 * Exception on null server.
+	 */
+	@Test(expected=IllegalArgumentException.class)
+	public void testNullServerException() {
+		serverClientHandler = new ServerClientHandlerImpl(null, UNIQUE_ID, ROLE);
+	}
+
+	/**
+	 * Exception on null id.
+	 */
+	@Test(expected=IllegalArgumentException.class)
+	public void testNullUniqueIDException() {
+		serverClientHandler = new ServerClientHandlerImpl(server, null, ROLE);
+	}
+
+	/**
+	 * Exception on null role.
+	 */
+	@Test(expected=IllegalArgumentException.class)
+	public void testNullRoleException() {
+		serverClientHandler = new ServerClientHandlerImpl(server, UNIQUE_ID, null);
 	}
 
 	/**
