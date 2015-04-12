@@ -47,7 +47,7 @@ public class TestServerClientHandler {
 	/**
 	 * The Initialized role.
 	 */
-	private Role ROLE = Role.RECEIVER;
+	private String ROLE = Role.RECEIVER;
 
 	/**
 	 * Initializing all required variables before each test.
@@ -64,7 +64,6 @@ public class TestServerClientHandler {
 		try {
 			clientSocket.close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -106,7 +105,7 @@ public class TestServerClientHandler {
 	 */
 	@Test
 	public void testRole() {
-		Role foundRole = serverClientHandler.getRole();
+		String foundRole = serverClientHandler.getRole();
 		
 		assertNotNull(foundRole);
 		assertEquals(ROLE, foundRole);
