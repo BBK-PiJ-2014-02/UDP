@@ -1,12 +1,16 @@
 package interfaces;
 /**
- * Server listens to clients via TCP.
- * Clients want connect to server and a connection is
- * then placed. Further handling of this connection
- * is then relayed to the ServerClientHandler.
+ * Server creates new instances of ServerClientHandler at each new Client connection.
+ * 
+ * First connected Client is set to be the sender of UDP packets to be sent to all
+ * other CLients. When sender stops sending packets, the next Client is elected to 
+ * be the next sender, and so on.
+ * 
+ * ServerClientHandler relays all UDP packet data flow between the Server and the
+ * Client. 
  * 
  * @author Vasco
  *
  */
-public interface Server {
+public interface Server extends Runnable {
 }
