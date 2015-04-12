@@ -7,8 +7,11 @@ import implementation.ServerImpl;
 import interfaces.Server;
 import interfaces.ServerClientHandler;
 
+import java.io.IOException;
+import java.net.Socket;
 import java.util.UUID;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -32,6 +35,11 @@ public class TestServerClientHandler {
 	private Server server;
 	
 	/**
+	 * The Client Socket
+	 */
+	private Socket clientSocket;
+	
+	/**
 	 * The unique ID.
 	 */
 	private UUID UNIQUE_ID = UUID.randomUUID();
@@ -47,7 +55,18 @@ public class TestServerClientHandler {
 	@Before
 	public void before() {
 		server = new ServerImpl();
-		serverClientHandler = new ServerClientHandlerImpl(server, UNIQUE_ID, ROLE);
+		clientSocket = new Socket();
+		serverClientHandler = new ServerClientHandlerImpl(server, clientSocket, UNIQUE_ID, ROLE);
+	}
+	
+	@After
+	public void after() {
+		try {
+			clientSocket.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	/**
@@ -55,7 +74,15 @@ public class TestServerClientHandler {
 	 */
 	@Test(expected=IllegalArgumentException.class)
 	public void testNullServerException() {
-		serverClientHandler = new ServerClientHandlerImpl(null, UNIQUE_ID, ROLE);
+		serverClientHandler = new ServerClientHandlerImpl(null, clientSocket, UNIQUE_ID, ROLE);
+	}
+
+	/**
+	 * Exception on null client Socket.
+	 */
+	@Test(expected=IllegalArgumentException.class)
+	public void testNullClientSocketException() {
+		serverClientHandler = new ServerClientHandlerImpl(null, clientSocket, UNIQUE_ID, ROLE);
 	}
 
 	/**
@@ -63,7 +90,7 @@ public class TestServerClientHandler {
 	 */
 	@Test(expected=IllegalArgumentException.class)
 	public void testNullUniqueIDException() {
-		serverClientHandler = new ServerClientHandlerImpl(server, null, ROLE);
+		serverClientHandler = new ServerClientHandlerImpl(server, clientSocket, null, ROLE);
 	}
 
 	/**
@@ -71,20 +98,9 @@ public class TestServerClientHandler {
 	 */
 	@Test(expected=IllegalArgumentException.class)
 	public void testNullRoleException() {
-		serverClientHandler = new ServerClientHandlerImpl(server, UNIQUE_ID, null);
+		serverClientHandler = new ServerClientHandlerImpl(server, clientSocket, UNIQUE_ID, null);
 	}
 
-	/**
-	 * Testing that the initialized UniqueID is still being returned.
-	 */
-	@Test
-	public void testUniqueID() {
-		UUID foundId = serverClientHandler.getUniqueID();
-		
-		assertNotNull(foundId);
-		assertEquals(UNIQUE_ID,foundId);
-	}
-	
 	/**
 	 * Testing if returned Role matches the initialized.
 	 */
