@@ -5,7 +5,7 @@ package constants;
  * @author Vasco
  *
  */
-public enum Role {
-    RECEIVER, // Client is to receive UDP packets from Server 
-    SENDER    // Client is to send UDP packets to Server
+public class Role {
+    public static final String RECEIVER = "RECEIVER"; // Client is to receive UDP packets from Server 
+    public static final String SENDER = "SENDER";     // Client is to send UDP packets to Server
 }
