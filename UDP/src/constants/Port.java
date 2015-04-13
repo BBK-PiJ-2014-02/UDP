@@ -9,16 +9,6 @@ public final class Port {
 	/**
 	 * The Server TCP port.
 	 */
-	public static final int SERVER = 9876;
+	public static final int SERVER = 7800;
 
-	/**
-	 * The Server-Handler UDP port for data relay.
-	 */
-	public static final int SERVER_RELAY_UDP = 24567;
-	
-	/**
-	 * The broadcast UDP port.
-	 */
-	public static final int UDP_BROADCAST = 4567;
-	
 }
