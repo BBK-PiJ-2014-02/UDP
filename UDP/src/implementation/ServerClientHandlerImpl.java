@@ -146,7 +146,7 @@ public class ServerClientHandlerImpl implements ServerClientHandler {
         while(!isIdRequested || !isRoleRequested) {
 
             // Get Client request
-            String request = getTCPmessage();
+            String request = getTCPMessage();
 
             // Check the type of request.
             if ( request.equals(Message.REQUEST_ROLE) ) {
@@ -224,7 +224,7 @@ public class ServerClientHandlerImpl implements ServerClientHandler {
      * 
      * @return String message
      */
-    private String getTCPmessage() {
+    private String getTCPMessage() {
         try {
             return inputStream.readLine();
         } catch (IOException e) {
@@ -251,5 +251,4 @@ public class ServerClientHandlerImpl implements ServerClientHandler {
         this.role = role;
         tcpSendRole();
     }    
-    
 }
