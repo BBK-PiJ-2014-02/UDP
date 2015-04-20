@@ -1,7 +1,5 @@
 package interfaces;
 
-
-
 /**
  * Server-Client Handler initiated by the Server to handle with a Client.
  * Will be sending the role via TCP as well as setting up the UDP Socket
@@ -12,17 +10,31 @@ package interfaces;
  *
  */
 public interface ServerClientHandler extends Runnable {
-	/**
-	 * The new Client's role to be set via TCP, requested by the server.
-	 * 
-	 * @param role
-	 */
-	public void setRole(String role);
-	
-	/**
-	 * Current Client's role.
-	 * 
-	 * @return String role
-	 */
-	public String getRole();
+    /**
+     * The new Client's role to be set via TCP, requested by the server.
+     * 
+     * @param role
+     */
+    public void setRole(String role);
+
+    /**
+     * Current Client's role.
+     * 
+     * @return String role
+     */
+    public String getRole();
+
+    /**
+     * The UDP port the client is sending packets to when under role sender.
+     * 
+     * @return port
+     */
+    public int getClientSendingPort();
+
+    /**
+     * The UDP port the client is listening to when under role receiver.
+     * 
+     * @return port
+     */
+    public int getClientReceivingPort();
 }
