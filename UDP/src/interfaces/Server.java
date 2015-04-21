@@ -13,4 +13,8 @@ package interfaces;
  *
  */
 public interface Server extends Runnable {
+	/**
+	 * Sends a shutdown signal.
+	 */
+	public void shutdown();
 }

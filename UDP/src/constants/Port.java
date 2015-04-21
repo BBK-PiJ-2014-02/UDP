@@ -10,5 +10,4 @@ public final class Port {
 	 * The Server TCP port.
 	 */
 	public static final int SERVER = 7800;
-
 }
