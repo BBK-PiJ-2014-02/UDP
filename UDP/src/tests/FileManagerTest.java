@@ -42,7 +42,7 @@ public class FileManagerTest {
     public void before() {
         // Initialize fileList
         fileList = new LinkedList<File>();
-        
+
         // Pull all test file from the default directory.
         DirectoryStream<Path> stream = null;
         try {
