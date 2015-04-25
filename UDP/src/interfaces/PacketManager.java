@@ -8,7 +8,7 @@ package interfaces;
  */
 public interface PacketManager {
 	/**
-	 * Receives via UDP the object PacketData from given hostName and port
+	 * Receives via UDP the object PacketData from given hostName and port.
 	 * 
 	 * @param packetData the PacketData
 	 * @param hostName the host
@@ -17,15 +17,13 @@ public interface PacketManager {
 	public static PacketData receive(PacketData packetData, String hostName, int port) {
 		return null;
 	}
-	
 
 	/**
-	 * Sends via UDP the object PacketData to hostName on port
+	 * Sends via UDP the object PacketData to hostName on port.
 	 * 
 	 * @param packetData the PacketData
 	 * @param hostName the host
-	 * @param port
+	 * @param port the port
 	 */
 	public static void send(PacketData packetData, String hostName, int port) { }
-
 }
