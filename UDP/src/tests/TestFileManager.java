@@ -21,7 +21,7 @@ import org.junit.Test;
  * @author Vasco
  *
  */
-public class FileManagerTest {
+public class TestFileManager {
     /**
      * The good path to files.
      */
