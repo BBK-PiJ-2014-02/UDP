@@ -16,7 +16,7 @@ import java.util.List;
  * @author Vasco
  *
  */
-public abstract interface FileManager {
+public interface FileManager {
     /**
      * Reads from the bucket path String for all files found
      * and returns them all in a form of a List.
