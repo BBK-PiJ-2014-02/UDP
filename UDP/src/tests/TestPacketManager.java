@@ -3,6 +3,7 @@ package tests;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import implementation.PacketDataImpl;
+import implementation.PacketManagerImpl;
 import interfaces.PacketData;
 import interfaces.PacketManager;
 
@@ -70,14 +71,17 @@ public class TestPacketManager {
 
         // Get the receiving port where the datagram should be sent from the sending socket.
         int recevingPort = receivingSocket.getLocalPort();
+        int sendingPort  = receivingSocket.getLocalPort();
 
         // Create a PacketData object with the data to be sent
         PacketData packet = new PacketDataImpl(DATA, ID, TOTAL_PACKETS, UID, PATH_FILENAME);
+        PacketManager packetManagerSend = new PacketManagerImpl(sendingSocket, localHost, recevingPort);
+        PacketManager packetManagerRecv = new PacketManagerImpl(receivingSocket, localHost, sendingPort);
 
-        PacketManager.send(sendingSocket, packet, localHost, recevingPort);
+        packetManagerSend.send(packet);
 
         // Collect the packet at the receiving socket 
-        PacketData foundPacket = PacketManager.receive(receivingSocket);
+        PacketData foundPacket = packetManagerRecv.receive();
 
         assertNotNull(foundPacket);
         assertEquals(new String(DATA), new String(foundPacket.getData()));

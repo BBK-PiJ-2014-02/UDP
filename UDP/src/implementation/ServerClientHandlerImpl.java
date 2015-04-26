@@ -88,6 +88,12 @@ public class ServerClientHandlerImpl implements ServerClientHandler {
      */
     private boolean hasMoreFiles = true;
 
+    /**
+     * The packet manager.
+     */
+    private final PacketManager packetManager;
+
+
     //========================================================================// 
 
     /**
@@ -159,11 +165,15 @@ public class ServerClientHandlerImpl implements ServerClientHandler {
             e.printStackTrace();
         }
 
+        // Initialise an immutable Package Manager
+        this.packetManager = new PacketManagerImpl(handlerUDPSocket, localHost, receivingPort);
+
         // Setup Client and Handler with ports, intial role and unique id
         setClientRole();         // Send Role to Client.
         setClientUniqueId();     // Send unique Id to Client
         sendOurReceivingPort();  // Ask client to listen to our sending port
         setOurSendingPort();     // Set our sending port with Client's receiving port.
+
     }
 
 
@@ -180,10 +190,18 @@ public class ServerClientHandlerImpl implements ServerClientHandler {
 
         // Endless loop until shutdown is requested.
         while(!clientRole.equals(Role.SHUTDOWN)) {
+
+            // Required delay
+            try {
+                Thread.sleep(Timeout.SLEEP_DELAY);
+            } catch (InterruptedException e1) {
+                e1.printStackTrace();
+            }
+
             // If Client is sending, we are receiving.
             if ( clientRole.equals(Role.SENDER)) {
                 // Wait for the next UDP packet to be sent to us.
-                PacketData packetData = PacketManager.receive(handlerUDPSocket);
+                PacketData packetData = packetManager.receive();
 
                 // PacletData null means that we have timed out.
                 // Client did not send any more packets or has no more files.
@@ -449,7 +467,7 @@ public class ServerClientHandlerImpl implements ServerClientHandler {
      */
     @Override
     public void sendUDPPacketToClient(PacketData packet) {
-        PacketManager.send(handlerUDPSocket, packet, localHost, sendingPort);
+        packetManager.send(packet);
     }
 
     /**

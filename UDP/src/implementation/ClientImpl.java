@@ -72,6 +72,10 @@ public class ClientImpl extends ClientFileManagerImpl implements Client {
      */
     private InetAddress localHost;
 
+    /**
+     * The packet manager.
+     */
+    private final PacketManager packetManager;
 
     /**
      * The Main.
@@ -144,6 +148,10 @@ public class ClientImpl extends ClientFileManagerImpl implements Client {
             e.printStackTrace();
         }
 
+        // Initialise an immutable Package Manager
+        this.packetManager = new PacketManagerImpl(udpSocket, localHost, receivingPort);
+
+
         // Load all data from the Handler in the order the Handler will be sending it.
         loadRole();              // Load Role given by the Server.
         loadUniqueId();          // Load unique Id given by the Server.
@@ -162,6 +170,13 @@ public class ClientImpl extends ClientFileManagerImpl implements Client {
 
         // Loop forever unless a shutdown was required.
         while(!role.equals(Role.SHUTDOWN)) { 
+
+            // Required delay
+            try {
+                Thread.sleep(Timeout.SLEEP_DELAY);
+            } catch (InterruptedException e1) {
+                e1.printStackTrace();
+            }
 
             // We are sending to the Server.
             if (role.equals(Role.SENDER)) {
@@ -185,7 +200,7 @@ public class ClientImpl extends ClientFileManagerImpl implements Client {
                         PacketData packet = super.getNextChunk(id);
 
                         // .. and send it to the Server.
-                        PacketManager.send(udpSocket, packet, localHost, sendingPort);
+                        packetManager.send(packet);
                     }
                 }
                 else {
@@ -198,20 +213,20 @@ public class ClientImpl extends ClientFileManagerImpl implements Client {
             if (role.equals(Role.RECEIVER)) {
 
                 // Wait for the packet to arrive.
-                PacketData packet = PacketManager.receive(udpSocket);
+                PacketData packet = packetManager.receive();
 
                 if ( packet == null ) {
                     if ( super.hasMoreFilesToSend() ) {
-                        // Client has more files to send, thus requesting a new role
+                        // TODO: Client has more files to send, thus requesting a new role
                         sendTCPMessage(Message.REQUEST_ROLE);
                     }
                     // packet became null because it was either a complete transfer
                     // or a time out. Thus do nothing.
-                    System.out.println("CLIENT: Got a null pack.");
                 }
                 else {
                     // Save packet to be then saved to file on completion.
                     super.savePacket(packet);
+                    playAudio(packet);
                 }
             }
         }
@@ -372,5 +387,15 @@ public class ClientImpl extends ClientFileManagerImpl implements Client {
             // By default apply no action.
             default : break;
         }
+    }
+
+    /**
+     * Playing the packet as audio.
+     * 
+     * @param packet PacketData
+     */
+    private void playAudio(PacketData packet) {
+        byte[] data = packet.getData();
+        // TODO: Investigate how to play byte array as audio.
     }
 }

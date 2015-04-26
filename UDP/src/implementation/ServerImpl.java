@@ -49,6 +49,7 @@ public class ServerImpl implements Server {
         // Open a new server socket for a new client wanting to connect.
         try { 
             serverSocket = new ServerSocket(Port.SERVER); 
+            serverSocket.setSoTimeout(Timeout.SERVER_SOCKET_TIMEOUT_DELAY);
         } 
         catch (IOException e) { 
             e.printStackTrace(); 
@@ -70,7 +71,7 @@ public class ServerImpl implements Server {
      */
     @Override
     public void run() {
-        // Run forever
+		// Run forever
         while(true) {
             // Flag on when timeout occurred.
             boolean timeout = false;
@@ -80,7 +81,6 @@ public class ServerImpl implements Server {
 
             // Accept next connection.
             try { 
-                clientSocket.setSoTimeout(Timeout.SERVER_SOCKET_TIMEOUT_DELAY);
                 clientSocket = serverSocket.accept();
                 System.out.println("SERVER: Accepted connection to port: " + clientSocket.getPort());
             } 
