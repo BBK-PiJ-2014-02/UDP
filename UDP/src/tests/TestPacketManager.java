@@ -41,6 +41,11 @@ public class TestPacketManager {
     private final String UID = "filename.txt";
 
     /**
+     * The path file name.
+     */
+    private final String PATH_FILENAME = "something/to/something";
+
+    /**
      * Testing both sending and receiving.
      */
     @Test
@@ -67,7 +72,7 @@ public class TestPacketManager {
         int recevingPort = receivingSocket.getLocalPort();
 
         // Create a PacketData object with the data to be sent
-        PacketData packet = new PacketDataImpl(DATA, ID, TOTAL_PACKETS, UID);
+        PacketData packet = new PacketDataImpl(DATA, ID, TOTAL_PACKETS, UID, PATH_FILENAME);
 
         PacketManager.send(sendingSocket, packet, localHost, recevingPort);
 
