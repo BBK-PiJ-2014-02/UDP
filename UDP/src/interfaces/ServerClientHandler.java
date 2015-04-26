@@ -52,4 +52,11 @@ public interface ServerClientHandler extends Runnable {
      * @param packet PacketData
      */
     public void sendUDPPacketToClient(PacketData packet);
+
+    /**
+     * When the Client has no more files to be sent, this returns false.
+     * 
+     * @return false if no more files to send
+     */
+    public boolean hasFiles();
 }
