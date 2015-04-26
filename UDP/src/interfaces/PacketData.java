@@ -40,4 +40,11 @@ public interface PacketData extends Serializable {
 	 * @return UID string
 	 */
 	public String getUID();
+
+	/**
+	 * The original path of the file and the original filename.
+	 * 
+	 * @return path plus filename
+	 */
+	public String getPathFilename();
 }
