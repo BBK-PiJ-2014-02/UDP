@@ -1,4 +1,7 @@
 package interfaces;
+
+import java.util.List;
+
 /**
  * Server creates new instances of ServerClientHandler at each new Client connection.
  * 
@@ -17,4 +20,11 @@ public interface Server extends Runnable {
 	 * Sends a shutdown signal.
 	 */
 	public void shutdown();
+
+	/**
+	 * This will return the list of all the handlers currently running.
+	 * 
+	 * @return List of ServerClientHanlder
+	 */
+	public List<ServerClientHandler> getAllHandlers();
 }
