@@ -26,7 +26,7 @@ public interface FileManager {
      * @param bucket the path to files
      * @return List of Files
      */
-    public static List<File> getFileList(String bucket) {
+    public default List<File> getFileList(String bucket) {
         if ( bucket == null ) throw new IllegalArgumentException("No bucket supplied.");
         Path dir = Paths.get(bucket);
 
@@ -59,13 +59,13 @@ public interface FileManager {
      * @param packetList the list of packets
      * @param file the to store info into
      */
-    public static void saveFile(List<PacketData> packetList) {
+    public default void saveFile(List<PacketData> packetList) {
         // Dealing with all exceptions.
         if ( packetList == null ) throw new IllegalArgumentException("Cannot save a null packet list to file.");
         if ( packetList.size() == 0 ) throw new IllegalArgumentException("Cannot save an emtpy packet list to file.");
 
         // Get the original path and file names
-        String originalPathFile = packetList.get(0).getUID();
+        String originalPathFile = packetList.get(0).getPathFilename();
 
         // Convert it into a File type object
         File originalFile = new File(originalPathFile);
@@ -76,7 +76,7 @@ public interface FileManager {
         String fullPath = originalPath.toString() + File.separatorChar + "receive" + File.separatorChar;
 
         // Collect only the file name and add a previx of the client uid.
-        String originalFileName = packetList.get(0).getId() + originalFile.getName();
+        String originalFileName = packetList.get(0).getUID() + "_" + originalFile.getName();
 
         // Append the file name to use to the calculated path
         File file = new File(fullPath + originalFileName);

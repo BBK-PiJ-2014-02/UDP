@@ -33,11 +33,15 @@ public class TestFileManager {
             "send"      + File.separatorChar;
 
     /**
+     * The Final Manager using the abstract default methods
+     */
+    private final FileManager fileManager = new FileManager() { };
+
+    /**
      * This expected file List.
      */
     private List<File> fileList;
 
-    
     @Before
     public void before() {
         // Initialize fileList
@@ -63,7 +67,7 @@ public class TestFileManager {
      */
     @Test(expected=IllegalArgumentException.class)
     public void testGetFileListNull() {
-        FileManager.getFileList(null);
+        fileManager.getFileList(null);
     }
     
     /**
@@ -71,7 +75,7 @@ public class TestFileManager {
      */
     @Test
     public void testGetFileListInvalidPath() {
-        FileManager.getFileList("no path at all");
+        fileManager.getFileList("no path at all");
     }
     
     /**
@@ -79,7 +83,7 @@ public class TestFileManager {
      */
     @Test
     public void testGetFileList() {
-        List<File> foundListFiles = FileManager.getFileList(PATH);
+        List<File> foundListFiles = fileManager.getFileList(PATH);
         assertNotNull(foundListFiles);
         verify(fileList, foundListFiles);
     }
