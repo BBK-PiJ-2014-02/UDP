@@ -28,9 +28,10 @@ public interface ClientFileManager {
     /**
      * Get the next chunk converted into a ready-to-send PackageData.
      * 
+     * @param UID the unique client id
      * @return PackageData object with chunk.
      */
-    public PacketData getNextChunk();
+    public PacketData getNextChunk(String UID);
 
     /**
      * Checks if the file pulling chunks 
