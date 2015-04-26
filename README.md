@@ -29,3 +29,20 @@ Multiple Clients connect to a Server via TCP. The first to connect will become t
  - When end of file is reached, will send a TCP message to say file was transferred.
  - When there is not more files to be sent, will send a TCP message saying so.
  - If a shutdown was issued, the endless look wil break and Client will finalise.
+
+
+#To Launch
+
+<b>Eclise</b>
+- Load the project in Ecplise
+- Under Run Configurations drop down menu, search for Main Class "ClientImpl"
+- Under Arguments, set a path e.g.: ./src/tests/resources/send ./src/tests/resources/receive
+- First run the ServerImpl
+- Then run multiple ClientImpl with same arguments (files will pre-pend Client unique Ids)
+- Files will be copied from send to receive.
+
+<b>Command Line</b>
+- Go to Eclipse, and export the ClientImpl and ServerImpl as Runnable JAR file
+- Make sure you have created the send and receive directories
+- run server with: java -jar ServerImpl.jar
+- run client with: java -jar ClientImpl.jar
