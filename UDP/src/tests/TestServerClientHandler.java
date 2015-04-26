@@ -13,7 +13,9 @@ import java.util.UUID;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 
 import constants.Role;
 
@@ -23,22 +25,18 @@ import constants.Role;
  * @author Vasco
  *
  */
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class TestServerClientHandler {
-	/**
-	 * The ServerClientHandler object handler.
-	 */
-	private ServerClientHandler serverClientHandler;
-	
 	/**
 	 * The Server object handler
 	 */
 	private Server server;
-	
+
 	/**
 	 * The Client Socket
 	 */
 	private Socket clientSocket;
-	
+
 	/**
 	 * The unique ID.
 	 */
@@ -48,6 +46,11 @@ public class TestServerClientHandler {
 	 * The Initialized role.
 	 */
 	private String ROLE = Role.RECEIVER;
+
+	/**
+	 * The ServerClientHandler object handler.
+	 */
+	private ServerClientHandler serverClientHandler;
 
 	/**
 	 * Initializing all required variables before each test.
@@ -67,7 +70,7 @@ public class TestServerClientHandler {
 			e.printStackTrace();
 		}
 	}
-	
+
 	/**
 	 * Exception on null server.
 	 */
@@ -81,7 +84,7 @@ public class TestServerClientHandler {
 	 */
 	@Test(expected=IllegalArgumentException.class)
 	public void testNullClientSocketException() {
-		serverClientHandler = new ServerClientHandlerImpl(null, clientSocket, UNIQUE_ID, ROLE);
+		serverClientHandler = new ServerClientHandlerImpl(server, null, UNIQUE_ID, ROLE);
 	}
 
 	/**
