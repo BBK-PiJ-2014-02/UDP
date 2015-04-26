@@ -1,11 +1,14 @@
 package interfaces;
+
+import java.io.Serializable;
+
 /**
  * The packet data for a chunk of a file being streamed.
  * 
  * @author Vasco
  *
  */
-public interface PacketData {
+public interface PacketData extends Serializable {
 	/**
 	 * The Packet id.
 	 * Packet ids refer to the order they should be
