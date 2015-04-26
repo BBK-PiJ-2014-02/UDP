@@ -45,4 +45,11 @@ public interface ServerClientHandler extends Runnable {
      * @param message from TCPServerListener
      */
     public void receivingTCPMessage(String message);
+
+    /**
+     * This will send the given packet to the Client via UDP.
+     * 
+     * @param packet PacketData
+     */
+    public void sendUDPPacketToClient(PacketData packet);
 }
