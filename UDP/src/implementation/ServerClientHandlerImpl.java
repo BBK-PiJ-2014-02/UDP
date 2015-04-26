@@ -1,5 +1,7 @@
 package implementation;
 
+import interfaces.PacketData;
+import interfaces.PacketManager;
 import interfaces.Server;
 import interfaces.ServerClientHandler;
 
@@ -7,12 +9,16 @@ import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.Socket;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.UUID;
 
 import constants.Message;
-import constants.Packet;
 import constants.Role;
+import constants.Timeout;
 
 /**
  * The ServerClientHandler interface implementation.
@@ -24,54 +30,73 @@ public class ServerClientHandlerImpl implements ServerClientHandler {
     /**
      * The current Client's role.
      */
-    private String role;
-    
+    protected String clientRole;
+
     /**
      * The Client's unique id.
      */
     private final UUID id;
-    
-    /**
-     * Define data.
-     */
-    private byte[] data = new byte[Packet.PACKET_SIZE];
-    
+
     /**
      * The Server link handler
      */
     private final Server server;
-    
+
     /**
-     * The Client socket.
+     * The local Host.
      */
-    private final Socket clientSocket;
+    private InetAddress localHost;
+
+    //================================= TCP ==================================// 
+
+    /**
+     * The TCP Client socket.
+     */
+    protected final Socket clientTCPSocket;
 
     /**
      * The Buffered Reader input from the client TCP socket.
      */
-    private BufferedReader inputStream;
-    
+    protected BufferedReader inputStream;
+
     /**
      * The output Stream to the client.
      */
-    private DataOutputStream outputStream;
-    
-    /**
-     * Client must request Role and id before starting reading or sending UDP packets.
-     */
-    private boolean isRoleRequested = false;
+    protected DataOutputStream outputStream;
+
+
+    //================================= UDP ==================================// 
 
     /**
-     * Client must request Role and id before starting reading or sending UDP packets.
+     * The Port the Client is listening to.
      */
-    private boolean isIdRequested = false;
-    
+    private Integer sendingPort;
+
+    /**
+     * The Port the Client is sending messages to.
+     */
+    private Integer receivingPort;
+
+    /**
+     * The UDP Handler Socket for sending / receiving messages to / from the Client.
+     */
+    private DatagramSocket handlerUDPSocket;
+
+    /**
+     * If the client sent message NO_FILES, this is set to false.
+     * The flag tells the handler if this client is good to set as sender.
+     */
+    private boolean hasMoreFiles = true;
+
+    //========================================================================// 
 
     /**
      * Constructor.
      * 
+     * @param server the server socket
+     * @param clientSocket the client socket
      * @param uniqueId the Client unique id
-     * @param role the client's role
+     * @param role the Client's role
      */
     public ServerClientHandlerImpl(Server server, Socket clientSocket, UUID uniqueId, String role) {
         // Validating given parameters
@@ -81,99 +106,189 @@ public class ServerClientHandlerImpl implements ServerClientHandler {
         if ( role == null ) throw new IllegalArgumentException("Role cannot be null.");
 
         this.server = server;
-        this.clientSocket = clientSocket;
+        this.clientTCPSocket = clientSocket;
         this.id   = uniqueId;
-        this.role = role;
+        this.clientRole = role;
+
+        try {
+            this.localHost = InetAddress.getLocalHost();
+        } catch (UnknownHostException e3) {
+            e3.printStackTrace();
+        }
+
+        // TCP timeout.
+        try {
+            this.clientTCPSocket.setSoTimeout(Timeout.TCP_SOCKET_TIMEOUT_DELAY);
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
         
+        // Get the local host.
+        try {
+            InetAddress.getLocalHost();
+        } catch (UnknownHostException e1) {
+            e1.printStackTrace();
+        }
+
         // Get the input stream ready to be read from.
         try {
-            this.inputStream = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            this.inputStream = new BufferedReader(new InputStreamReader(clientTCPSocket.getInputStream()));
         } catch (IOException e) {
             e.printStackTrace();
         }
-        
+
         // Get the output stream ready to be written into.
         try {
-            this.outputStream = new DataOutputStream(clientSocket.getOutputStream());
+            this.outputStream = new DataOutputStream(clientTCPSocket.getOutputStream());
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        // Initiate the Handler UDP socket
+        try {
+            // Let a new port be chosen automatically
+            handlerUDPSocket = new DatagramSocket();
+
+            // Set the timeout for UDP
+            handlerUDPSocket.setSoTimeout(Timeout.UDP_SOCKET_TIMEOUT_DELAY);
+
+            // Set the Handler's receiving port
+            receivingPort = handlerUDPSocket.getLocalPort();
+
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
+
+        // Setup Client and Handler with ports, intial role and unique id
+        setClientRole();         // Send Role to Client.
+        setClientUniqueId();     // Send unique Id to Client
+        sendOurReceivingPort();  // Ask client to listen to our sending port
+        setOurSendingPort();     // Set our sending port with Client's receiving port.
     }
+
+
+    //============================= Runnable =================================// 
 
     /**
      * The Runnable subroutine.
      */
     @Override
     public void run() {
-        // Ensure Client has Role and uniqueID set.
-        initializeClient();
+        // Initiate listener for any TCP messages sent by the client.
+        Thread listener = new Thread(new TCPServerListener(this));
+        listener.start();
 
-        while(true) {
-            // If a signal to shutdown, exits loop.
-            if (role.equals(Role.SHUTDOWN)) break;
+        // Endless loop until shutdown is requested.
+        while(!clientRole.equals(Role.SHUTDOWN)) {
+            // If Client is sending, we are receiving.
+            if ( clientRole.equals(Role.SENDER)) {
+                // Wait for the next UDP packet to be sent to us.
+                PacketData packetData = PacketManager.receive(handlerUDPSocket);
+
+                // PacletData null means that we have timed out.
+                // Client did not send any more packets or has no more files.
+                if ( packetData == null ) {
+                    // TODO Make some other Client the sender.
+                    pickNextSender();
+                    continue;
+                }
+
+                // Sent to all clients receiving this, the received packetData.
+                sendAll(packetData);
+            }
         }
 
-//        setRole(Role.RECEIVER);
-//        tcpSendRole();
-
-//        setRole(Role.SENDER);
-//        tcpSendRole();
-
-//        setRole(Role.SHUTDOWN);
-//        tcpSendRole();
-        
+        // That's all folks...
         finalise();
+
         System.out.println("HANDLER: finished.");
     }
-    
+
+
+    //====================== Initialising and Finalising methods ==========================// 
+
+
     /**
      * Shutdown Handler.
      */
     private void finalise() {
         try {
-            clientSocket.close();
+            clientTCPSocket.close();
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
     }
 
     /**
-     * Ensures client gets Role and uniqueID set before continuing.
+     * Set Client's sending port to the one Handler's receiving port.
+     * 
+     * @return true if successful
      */
-    private void initializeClient() {
-        // Wait until the Client requests Role and uniqueID
-        while(!isIdRequested || !isRoleRequested) {
+    private boolean sendOurReceivingPort() {
+        // Sends the Handler's receiving port to Client.
+        sendTCPMessage(receivingPort.toString());
 
-            // Get Client request
-            String request = getTCPMessage();
-
-            // Check the type of request.
-            if ( request.equals(Message.REQUEST_ROLE) ) {
-
-                // Sends the role to Client.
-                tcpSendRole();
-                
-                // Awaits for acknowledgement
-                if ( acknowledge(Message.SUCCESS) ) {
-                    isRoleRequested = true;
-                    continue;
-                }
-            }
-            
-            // Check if request is of type id
-            if ( request.equals(Message.REQUEST_ID) ) {
-                
-                // Sends the id to Client.
-                tcpSendId();
-                
-                // Awaits acknowledgement.
-                if ( acknowledge(Message.SUCCESS) ) {
-                    isIdRequested = true;
-                    continue;
-                }
-            }
+        // Awaits for acknowledgement
+        if ( isReceivedMessage(Message.SUCCESS) ) {
+            return true;
         }
+
+        return false;
+    }
+
+    /**
+     * Send the Role to the Client.
+     * 
+     * @return true if successful
+     */
+    private boolean setClientRole() {
+        // Sends the role to Client.
+        sendTCPMessage(clientRole.toString());
+
+        // Awaits for acknowledgement
+        if ( isReceivedMessage(Message.SUCCESS) ) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Send the Unique ID to the Client.
+     * 
+     * @return true if successful
+     */
+    private boolean setClientUniqueId() {
+        // Sends unique Id to Client.
+        sendTCPMessage(id.toString());
+
+        // Awaits for acknowledgement
+        if ( isReceivedMessage(Message.SUCCESS) ) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Loads the Client's UDP receiving port as our sending port.
+     */
+    private void setOurSendingPort() {
+        // Gets the Client's receiving port
+        String port = null;
+        try {
+            port = inputStream.readLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // If port is null, throw exception.
+        if ( port == null ) throw new IllegalStateException("Received a null port from client.");
+
+        // Parse the port into integer.
+        sendingPort = Integer.parseInt(port);
+
+        // Send acknowledgement
+        sendTCPMessage(Message.SUCCESS);
     }
 
     /**
@@ -182,7 +297,7 @@ public class ServerClientHandlerImpl implements ServerClientHandler {
      * @param message the expected message
      * @return true if acknowledged
      */
-    private boolean acknowledge(String message) {
+    private boolean isReceivedMessage(String message) {
         if ( message == null ) throw new IllegalArgumentException("Cannot expect a null message.");
 
         String messageReturned = "";
@@ -194,44 +309,23 @@ public class ServerClientHandlerImpl implements ServerClientHandler {
             e.printStackTrace();
         }
         return false;
-        
     }
 
-    /**
-     * TCP-send the Role to the client.
-     */
-    private void tcpSendRole() { 
-        try {
-            outputStream.writeBytes(role+'\n');
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+
+    //=========================== Running time methods ===============================// 
 
     /**
-     * TCP-send the Id to the client.
-     */
-    private void tcpSendId() { 
-        try {
-            outputStream.writeBytes(id.toString()+'\n');
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-    
-    /**
-     * TCP-receive message sent by Client or Error.
+     * Send a message to Client.
      * 
-     * @return String message
+     * @param message the message
      */
-    private String getTCPMessage() {
+    private void sendTCPMessage(String message) {
+        if ( message == null ) throw new IllegalArgumentException("Cannot send a null message.");
         try {
-            return inputStream.readLine();
+            outputStream.writeBytes(message+"\n");
         } catch (IOException e) {
             e.printStackTrace();
         }
-        
-        return Message.ERROR;
     }
 
     /**
@@ -239,7 +333,7 @@ public class ServerClientHandlerImpl implements ServerClientHandler {
      */
     @Override
     public String getRole() {
-        return role;
+        return clientRole;
     }
 
     /**
@@ -248,7 +342,121 @@ public class ServerClientHandlerImpl implements ServerClientHandler {
     @Override
     public void setRole(String role) {
         if ( role == null ) throw new IllegalArgumentException("Cannot set a null Role.");
-        this.role = role;
-        tcpSendRole();
-    }    
+        this.clientRole = role;
+        sendTCPMessage(this.clientRole.toString());
+    }
+
+    /**
+     * The UDP port the client is sending messages to.
+     */
+    @Override
+    public int getClientSendingPort() {
+        return receivingPort;
+    }
+
+    /**
+     * The UDP port the client is listening to.
+     */
+    @Override
+    public int getClientReceivingPort() {
+        return sendingPort;
+    }
+
+
+
+    /**
+     * Listener messages will end up here to be processed.
+     */
+    @Override
+    public void receivingTCPMessage(String message) {
+        switch(message) {
+            // Client has finished sending a file.
+            case Message.FILE_TRANSFERRED : {
+                // TODO: If any actions needs made after client sends on file.
+                //       these should be added here. Currently no action is taken
+                //       and is expected for the Client to carry on with next file
+                //       until no more files are found to be sent.
+                setRole(Role.RECEIVER);
+                System.out.println("HANDLER("+id+"): file transferred, picking up next ender");
+                pickNextSender();
+                break; 
+            }
+
+            // Client has no more files to send. This will prevent the client from
+            // being requested to role sender in the future.
+            case Message.NO_FILES : {
+                hasMoreFiles = false;
+                System.out.println("HANLDER("+id+") NO FILES; setting role to RECEIVER");
+                setRole(Role.RECEIVER);
+                break;
+            }
+
+            // By default, do nothing about it.
+            default : break;
+        }
+    }
+
+    /**
+     * Go over all handlers and pick the client that still has some files to send.
+     * If all clients have no more files to send, issue a shutdown request.
+     */
+    private void pickNextSender() {
+
+        // Flag to check if we have set any other client as sender
+        boolean foundNewSender = false;
+
+        // Go over all clients to find the next sender
+        for( ServerClientHandler serverClientHandler : server.getAllHandlers() ) {
+
+            // If this client still has files to send
+            if ( serverClientHandler.hasFiles() ) {
+
+                // Request a change of role to become sender
+                serverClientHandler.setRole(Role.SENDER);
+
+                // We have found one
+                foundNewSender = true;
+
+                // No need to keep searching
+                break;
+            }
+        }
+
+        // If no new sender Client set, shutdown the service.
+        if (!foundNewSender) server.shutdown();
+    }
+
+    /**
+     * Send to all receiver handlers the currently received packet.
+     * 
+     * @param packet PacketData
+     */
+    private void sendAll(PacketData packet) {
+        // Deal with null packet.
+        if ( packet == null ) throw new IllegalArgumentException("Cannot send a null packet.");
+
+        // Go over all handlers currently running and send this packet to then if they are receivers.
+        for ( ServerClientHandler serverClientHander : server.getAllHandlers() ) {
+            if ( serverClientHander.getRole().equals(Role.RECEIVER)) {
+                serverClientHander.sendUDPPacketToClient(packet);
+                System.out.println("SENT PACKET: "+packet.getId());
+            }
+        }
+    }
+
+    /**
+     * Sends the given packet to the Client.
+     */
+    @Override
+    public void sendUDPPacketToClient(PacketData packet) {
+        PacketManager.send(handlerUDPSocket, packet, localHost, sendingPort);
+    }
+
+    /**
+     * If the client sent at any point a NO_FILES message, this returns false thereafter.
+     */
+    @Override
+    public boolean hasFiles() {
+        return hasMoreFiles;
+    }
 }
