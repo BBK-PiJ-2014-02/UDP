@@ -6,12 +6,14 @@ import interfaces.ServerClientHandler;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 
 import constants.Port;
 import constants.Role;
+import constants.Timeout;
 
 /**
  * Server Implementation of Server interface.
@@ -20,27 +22,25 @@ import constants.Role;
  *
  */
 public class ServerImpl implements Server {
-
     /**
      * List of ServerClientHandler instantiated.
      */
     private List<ServerClientHandler> serverClientHandlerList;
 
     /**
-     * The currently sending client.
-     */
-    private ServerClientHandler serverClientHandler;
-
-    /**
      * The ServerSocket.
      */
     private ServerSocket serverSocket;
-    
+
     /**
      * The Client Socket.
      */
     private Socket clientSocket;
 
+    /**
+     * Shutdown flag will be true whenever a shutdown is issued.
+     */
+    private boolean shutdown = false;
 
     /**
      * The Server Constructor.
@@ -53,11 +53,8 @@ public class ServerImpl implements Server {
         catch (IOException e) { 
             e.printStackTrace(); 
         }
-
-        // Instantiate a new LinkedList for all ServerClientHandlers.
-        serverClientHandlerList = new LinkedList<ServerClientHandler>();
     }
-    
+
     /**
      * The Server startup main method.
      * 
@@ -75,92 +72,80 @@ public class ServerImpl implements Server {
     public void run() {
         // Run forever
         while(true) {
+            // Flag on when timeout occurred.
+            boolean timeout = false;
+
             // Wait for next Client to connect
             clientSocket = new Socket();
-            
+
             // Accept next connection.
             try { 
+                clientSocket.setSoTimeout(Timeout.SERVER_SOCKET_TIMEOUT_DELAY);
                 clientSocket = serverSocket.accept();
-                System.out.println("Accepted connection to port: "+clientSocket.getPort());
+                System.out.println("SERVER: Accepted connection to port: " + clientSocket.getPort());
             } 
-            catch (IOException e) { 
+            catch ( SocketException se ) {
+                timeout = true;
+            } catch (IOException e ) { 
                 e.printStackTrace(); 
             }
-            
-            // A new connection was found and accepted. Add it to the Handler as sender if no sender yet.
-            ServerClientHandler newClient = null;
-            if ( serverClientHandler == null ) { 
-                serverClientHandler = new ServerClientHandlerImpl(this, clientSocket, UUID.randomUUID(), Role.SENDER);
-                newClient = serverClientHandler;
-            }
-            else {
-                newClient = new ServerClientHandlerImpl(this, clientSocket, UUID.randomUUID(), Role.RECEIVER);
-            }
-            serverClientHandlerList.add(newClient);
-            
-            // Create a new thread for the handler and start it.
-            Thread newThread = new Thread(newClient);
-            newThread.start();
-            System.out.println("Added a new client: "+serverClientHandlerList.size());
 
+            if ( !timeout ) {
+                // A new connection was found and accepted. Add it to the Handler and set it as sender if no sender set yet.
+                ServerClientHandler newClient = null;
+                if ( serverClientHandlerList == null ) { 
+                    serverClientHandlerList = new LinkedList<ServerClientHandler>();
+                    newClient = new ServerClientHandlerImpl(this, clientSocket, UUID.randomUUID(), Role.SENDER);
+                }
+                else {
+                    newClient = new ServerClientHandlerImpl(this, clientSocket, UUID.randomUUID(), Role.RECEIVER);
+                }
+                serverClientHandlerList.add(newClient);
 
-// TODO
-            // If requested to quit, exit.
-//            if ( false ) break;
+                // Create a new thread for the handler and start it.
+                Thread newThread = new Thread(newClient);
+                newThread.start();
+
+                System.out.println("SERVER: Added a new client: " + serverClientHandlerList.size());
+            }
+
+            // Check if a shutdown was issued.
+            if ( shutdown ) break;
         }
-        
-        // Shutdown Server and any open Clients.
-//        shutdown();
-        
-//        System.out.println("All done.");
-    }
-    
-    /**
-     * Shutdown.
-     */
-    private void shutdown() {
-        for(ServerClientHandler serverClientHandler : serverClientHandlerList) {
-            System.out.println("Shutting down: "+serverClientHandler.toString());
-            serverClientHandler.setRole(Role.SHUTDOWN);
-        }
-        
+
+        // Close the socket before exit.
         try {
             serverSocket.close();
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        
+
+        System.out.println("SERVER shutdown successfully!");
     }
-    
+
     /**
-     * Deletes a ServerClientHanlder from the list due to closed connection.
-     * 
-     * @param serverClientHandler
+     * Shutdown the whole system.
      */
-    public void deleteServerClientHander(ServerClientHandler serverClientHandler) {
-        if ( serverClientHandler == null ) throw new IllegalArgumentException("Cannot delete a null ServerClientHandler.");
-        // If this was a sender, it is required to delete it from the clientSender.
-        if ( serverClientHandler.getRole().equals(Role.SENDER) ) {
-            serverClientHandler = null;
+    @Override
+    public void shutdown() {
+        for(ServerClientHandler serverClientHandler : serverClientHandlerList) {
+            System.out.println("Shutting down: "+serverClientHandler.toString());
+            serverClientHandler.setRole(Role.SHUTDOWN);
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
-        this.serverClientHandlerList.remove(serverClientHandler);
+
+        this.shutdown = true;
     }
-    
+
     /**
-     * When this is called, the current clientSender will be sent to the end of the queue 
-     * and the first from the serverClientHandler list will be called to send instead.
+     * Return a list of all currently live handlers.
      */
-    public void setNextSender() {
-        if ( serverClientHandlerList.size() > 0 ) {
-            serverClientHandler.setRole(Role.RECEIVER);
-            // Try to remove before inserting it as a receiver.
-            serverClientHandlerList.remove(serverClientHandler);
-            serverClientHandlerList.add(serverClientHandler);
-            
-            ServerClientHandler newServerClientHandler = serverClientHandlerList.remove(0);
-            newServerClientHandler.setRole(Role.SENDER);
-            serverClientHandler = newServerClientHandler;
-        }
+    @Override
+    public List<ServerClientHandler> getAllHandlers() {
+        return serverClientHandlerList;
     }
 }
