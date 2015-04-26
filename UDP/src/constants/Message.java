@@ -15,6 +15,6 @@ public class Message {
     public static final String SUCCESS = "SUCCESS";                           // Successfully processed message 
     public static final String REQUEST_SENDING_UDP_PORT = "SENDING_PORT";     // Requested by the Handler to Client 
     public static final String REQUEST_RECEIVING_UDP_PORT = "RECEIVING_PORT"; // Requested by Client to the Handler 
-    public static final String FILE_TRANSFERED = "FILE_TRANSFERED";           // All UDP packets have been successfully transfered for a file
+    public static final String FILE_TRANSFERRED = "FILE_TRANSFERRED";         // All UDP packets have been successfully transfered for a file
     public static final String NO_FILES = "NO_FILES";                         // No more files to be transfered
 }
