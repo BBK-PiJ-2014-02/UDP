@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
@@ -71,7 +72,7 @@ public class ServerImpl implements Server {
      */
     @Override
     public void run() {
-		// Run forever
+        // Run forever
         while(true) {
             // Flag on when timeout occurred.
             boolean timeout = false;
@@ -84,7 +85,7 @@ public class ServerImpl implements Server {
                 clientSocket = serverSocket.accept();
                 System.out.println("SERVER: Accepted connection to port: " + clientSocket.getPort());
             } 
-            catch ( SocketException se ) {
+            catch ( SocketTimeoutException se ) {
                 timeout = true;
             } catch (IOException e ) { 
                 e.printStackTrace(); 
@@ -129,15 +130,8 @@ public class ServerImpl implements Server {
     @Override
     public void shutdown() {
         for(ServerClientHandler serverClientHandler : serverClientHandlerList) {
-            System.out.println("Shutting down: "+serverClientHandler.toString());
             serverClientHandler.setRole(Role.SHUTDOWN);
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
         }
-
         this.shutdown = true;
     }
 
