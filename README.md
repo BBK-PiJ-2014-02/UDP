@@ -46,3 +46,8 @@ Multiple Clients connect to a Server via TCP. The first to connect will become t
 - Make sure you have created the send and receive directories
 - run server with: java -jar ServerImpl.jar
 - run client with: java -jar ClientImpl.jar
+
+
+# TODO
+- Fix multiple concurrency problems
+- Play audio as packets arrive at destination
