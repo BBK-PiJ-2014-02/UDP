@@ -53,17 +53,22 @@ public class ClientFileManagerImpl implements ClientFileManager {
      * The current chunk id being extracted.
      */
     private int chunkId;
-    
+
     /**
      * Total chunks required to stream current file.
      */
     private int totalChunks;
-    
+
     /**
      * List of packets received stored in order.
      * File will be saved to disk when completed.
      */
     private List<PacketData> receivedPacketList;
+
+    /**
+     * FileManager for this Client.
+     */
+    private final FileManager fileManager = new FileManager(){};
     
     /**
      * Constructor
@@ -73,7 +78,7 @@ public class ClientFileManagerImpl implements ClientFileManager {
      */
     public ClientFileManagerImpl(String sendingBucket, String receivingBucket) {
         // Initialize the sending file list
-        this.sendingFileList = FileManager.getFileList(sendingBucket);
+        this.sendingFileList = fileManager.getFileList(sendingBucket);
         this.receivingBucketPath = receivingBucket;
         this.chunkId = 1;
         if ( hasMoreFilesToSend() ) loadNextFileToSend();
@@ -147,10 +152,13 @@ public class ClientFileManagerImpl implements ClientFileManager {
             this.isEOF = true;
         }
 
-        PacketData packet = new PacketDataImpl(dataToReturn, chunkId, totalChunks, UID,streamingFile.toString());
+        // Instantiate a new PacketData Object
+        PacketData packet = new PacketDataImpl(dataToReturn, chunkId, totalChunks, UID, streamingFile.toString());
 
+        // Increment chunk for next to come
         this.chunkId++;
 
+        // Return the PacketData object.
         return packet;
     }
 
@@ -163,7 +171,7 @@ public class ClientFileManagerImpl implements ClientFileManager {
     }
 
     /**
-     * Takes the given fine and calculates the amount of chunks required to be sent
+     * Takes the given file and calculates the amount of chunks required to be sent
      * if each chunk would have the universally set Packet.CHUNK_SIZE
      * 
      * @param streamingFile the file
@@ -172,6 +180,7 @@ public class ClientFileManagerImpl implements ClientFileManager {
         try {
             // Total bytes
             double totalBytes = fileInputStream.available();
+
             // Chuck size set
             double chunkSize  = Packet.CHUNK_SIZE;
 
@@ -217,63 +226,63 @@ public class ClientFileManagerImpl implements ClientFileManager {
 
     /**
      * Saves packet data into file if all packets have been received in 
-     * sequence from packet 0 to current, and will close file whenever
+     * sequence from packet 1 to current, and will close file whenever
      * the last packet is received.
      */
     @Override
     public void savePacket(PacketData packetData) {
-    	// Deal with null packet
-    	if ( packetData == null ) throw new IllegalArgumentException("Cannot save a null packet");
+        // Deal with null packet
+        if ( packetData == null ) throw new IllegalArgumentException("Cannot save a null packet");
 
-    	// First time running, initialize the received packet list.
-    	if ( this.receivedPacketList == null ) this.receivedPacketList = new LinkedList<PacketData>();
+        // First time running, initialize the received packet list.
+        if ( this.receivedPacketList == null ) this.receivedPacketList = new LinkedList<PacketData>();
 
-    	// If no first element, the list is empty. Add the new packet and job done.
-    	if ( receivedPacketList.size() == 0 ) receivedPacketList.add(packetData);
-    	else {
-        	// Get the first element if exists.
-        	PacketData firstElement = receivedPacketList.get(0);
-    		String currentUID = firstElement.getUID();
-    		String receivedUID = packetData.getUID();
+        // If no first element, the list is empty. Add the new packet and job done.
+        if ( receivedPacketList.size() == 0 ) receivedPacketList.add(packetData);
+        else {
+            // Get the first element if exists.
+            PacketData firstElement = receivedPacketList.get(0);
+            String currentUID = firstElement.getUID();
+            String receivedUID = packetData.getUID();
 
-    		// This is the same file still. Add it in the sequence.
-    		if ( currentUID.equals(receivedUID) ) {
+            // This is the same file still. Add it in the sequence.
+            if ( currentUID.equals(receivedUID) ) {
 
-    			// The index to add this new packet to.
-    			int addAtIndex = 0;
+                // The index to add this new packet to.
+                int addAtIndex = 0;
 
-    			// This packet id.
-    			int packetId = packetData.getId();
+                // This packet id.
+                int packetId = packetData.getId();
 
-    			// Find the first index higher than current packet id
-    			for ( PacketData currentPacket : receivedPacketList ) {
+                // Find the first index higher than current packet id
+                for ( PacketData currentPacket : receivedPacketList ) {
 
-    				// Our new packet should go on a higher index
-    				if ( packetId > currentPacket.getId() ) addAtIndex++;
-    				// This element already exists.
-    				else if ( packetId == packetData.getId() )  {
-    					addAtIndex = -1;
-    					break;
-    				}
-    				// This is the first element with higher packet id.
-    				else break;
-    			}
+                    // Our new packet should go on a higher index
+                    if ( packetId > currentPacket.getId() ) addAtIndex++;
+                    // This element already exists.
+                    else if ( packetId == packetData.getId() )  {
+                        addAtIndex = -1;
+                        break;
+                    }
+                    // This is the first element with higher packet id.
+                    else break;
+                }
 
-    			// Add the packet on the correct index to keep packets sorted unless already exists.
-    			if ( addAtIndex >= 0 ) receivedPacketList.add(addAtIndex, packetData);
-    		}
-    		// This is a new file, start new.
-    		else {
-    			receivedPacketList = new LinkedList<PacketData>();
-    			receivedPacketList.add(packetData);
-    		}
-    	}
-    	
-    	// Check if complete and ready to be saved.
-    	if ( receivedPacketList.get(0).getTotalPackets() == receivedPacketList.size() ) 
-    		FileManager.saveFile(receivedPacketList);
+                // Add the packet on the correct index to keep packets sorted unless already exists.
+                if ( addAtIndex >= 0 ) receivedPacketList.add(addAtIndex, packetData);
+            }
+            // This is a new file, start new.
+            else {
+                receivedPacketList = new LinkedList<PacketData>();
+                receivedPacketList.add(packetData);
+            }
+        }
+
+        // Check if complete and ready to be saved.
+        if ( receivedPacketList.get(0).getTotalPackets() == receivedPacketList.size() ) 
+            fileManager.saveFile(receivedPacketList);
     }
-    
+
     /**
      * Whenever the Server decides to change the role of the client,
      * the client should change to receive a file instead of continuing
@@ -291,5 +300,8 @@ public class ClientFileManagerImpl implements ClientFileManager {
         
         // Set sending flag to false.
         isSending = false;
+
+        // Reset the streaming file
+        streamingFile = null;
     }
 }
