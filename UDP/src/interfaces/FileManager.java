@@ -75,8 +75,8 @@ public interface FileManager {
         Path originalPath = originalFile.toPath().getParent().getParent();
         String fullPath = originalPath.toString() + File.separatorChar + "receive" + File.separatorChar;
 
-        // Collect only the file name.
-        String originalFileName = originalFile.getName();
+        // Collect only the file name and add a previx of the client uid.
+        String originalFileName = packetList.get(0).getId() + originalFile.getName();
 
         // Append the file name to use to the calculated path
         File file = new File(fullPath + originalFileName);
@@ -90,14 +90,15 @@ public interface FileManager {
             }
         }
 
+        // Set ready the File Output Stream
         FileOutputStream fileOutputStream = null;
-
         try {
             fileOutputStream = new FileOutputStream(file);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
 
+        // Write each packet into it in the order they exist in list.
         for( PacketData packet : packetList ) {
             byte[] data = packet.getData();
             try {
@@ -107,11 +108,11 @@ public interface FileManager {
             }
         }
 
+        // Close the File Output Stream
         try {
             fileOutputStream.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-    };
+    }
 }
