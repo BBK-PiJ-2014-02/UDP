@@ -2,9 +2,6 @@ package implementation;
 
 import java.io.IOException;
 
-import constants.Message;
-import constants.Role;
-
 /**
  * Listener for any TCP messages and passes it onto the ServerClientHandler.
  * 
