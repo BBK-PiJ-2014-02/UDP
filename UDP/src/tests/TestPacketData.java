@@ -33,7 +33,12 @@ public class TestPacketData {
 	 * The unique ID.
 	 */
 	private final String UID = "qwer-24-er";
-	
+
+	/**
+	 * The path filename.
+	 */
+	private final String PATH_FILENAME = "blah/bleh/bliss.ping";
+
 	/**
 	 * The PacketData handler.
 	 */
@@ -44,7 +49,7 @@ public class TestPacketData {
 	 */
 	@Before
 	public void before() {
-		this.packetDataHanlder = new PacketDataImpl(DATA, ID, TOTAL_IDS, UID);
+		this.packetDataHanlder = new PacketDataImpl(DATA, ID, TOTAL_IDS, UID, PATH_FILENAME);
 	}
 	
 	/**
@@ -82,5 +87,14 @@ public class TestPacketData {
 	public void testUniqueId() {
 		String found = packetDataHanlder.getUID();
 		assertEquals(UID, found);
+	}
+
+	/**
+	 * Check path filename.
+	 */
+	@Test
+	public void testPathFilename() {
+		String found = packetDataHanlder.getPathFilename();
+		assertEquals(PATH_FILENAME, found);
 	}
 }
