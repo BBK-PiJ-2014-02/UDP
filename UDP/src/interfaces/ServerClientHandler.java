@@ -37,4 +37,12 @@ public interface ServerClientHandler extends Runnable {
      * @return port
      */
     public int getClientReceivingPort();
+
+    /**
+     * The Listener will receive messages and relay them to the Server
+     * to be executed according to expectations.
+     * 
+     * @param message from TCPServerListener
+     */
+    public void receivingTCPMessage(String message);
 }

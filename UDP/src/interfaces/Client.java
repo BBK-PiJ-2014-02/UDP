@@ -9,4 +9,11 @@ package interfaces;
  *
  */
 public interface Client extends Runnable {
+    /**
+     * The Listener will receive messages and relay them to the Client
+     * to be executed according to expectations.
+     * 
+     * @param message from TCPClientListener
+     */
+    public void receivingTCPMessage(String message);
 }
