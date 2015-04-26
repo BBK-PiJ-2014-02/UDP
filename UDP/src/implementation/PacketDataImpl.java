@@ -40,17 +40,23 @@ public class PacketDataImpl implements PacketData {
    private final String UID;
 
    /**
+    * The original path filename where data came from.
+    */
+   private final String pathFilename;
+
+   /**
     * Constructor.
     * 
     * @param data to be transferred
     * @param id sequence for this packet
     * @param totalIds for this file.
     */
-   public PacketDataImpl(byte[] data, int id, int totalIds, String UID) {
+   public PacketDataImpl(byte[] data, int id, int totalIds, String UID, String pathFilename) {
       this.data = data;
       this.id = id;
       this.totalIds = totalIds;
       this.UID = UID;
+      this.pathFilename = pathFilename;
    }
 
    /**
@@ -83,6 +89,14 @@ public class PacketDataImpl implements PacketData {
    @Override
    public String getUID() {
       return UID;
+   }
+
+   /**
+    * The original file name and path.
+    */
+   @Override
+   public String getPathFilename() {
+       return pathFilename;
    }
 
    /**
